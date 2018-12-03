@@ -45,18 +45,21 @@ def process(*args): #input filename
         if str(row['Actor1CountryCode']).upper() in args:
             gevent_id = row['GLOBALEVENTID']
             country_Code = row['Actor1CountryCode']
+            tone = row['AvgTone']
             dateAdded = row['DATEADDED']
             url = row['SOURCEURL']
     
-            news = News(gevent_id,country_Code,dateAdded,url)
+            news = News(gevent_id,country_Code,tone,dateAdded,url)
             ret.append(news)
+    print('There are %d items in News.'% len(ret))
     return ret
 
     
 class News:
-    def __init__(self,gevent_id,countryCode,dateAdded,url):
+    def __init__(self,gevent_id,countryCode,tone,dateAdded,url):
         self.gevent_id = gevent_id
         self.countryCode = countryCode
+        self.tone = tone
         self.dateAdded = dateAdded
         self.url = url
         self.text = None
@@ -212,8 +215,9 @@ def filter_stories(stories, trigger_dict):
     Returns: a list of only the stories for which a trigger in triggerlist fires.
     """
     trig_story = []
-    temp_stories = stories[:]
-    for story in temp_stories:
+    temp_stories = stories[:30]
+    for index, story in enumerate(temp_stories):
+        print(index)
         story.clean_text()
 #        for key,trig in trigger_dict.items():
 #            try:
@@ -222,6 +226,6 @@ def filter_stories(stories, trigger_dict):
 #            except AttributeError:
 #                print('error occured')
         #trig_story.append(story.get_text())
-    return trig_story
+#    return trig_story
 
 
