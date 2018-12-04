@@ -10,6 +10,8 @@ Created on Thu Nov 29 11:23:17 2018
 import string
 import time
 import pandas as pd
+from glob import iglob
+import os
 #import threading
 # from project_util import translate_html
 #from mtTkinter import *
@@ -25,9 +27,10 @@ from newspaper import Article
 # Code for retrieving and parsing
 # Google and Yahoo News feeds
 # Do not change this code
-#======================        
+#======================        \
 
-def process(*args): #input filename
+
+def process(df, *args): #input filename
     """
     Fetches news items from export.csv file
     Returns a list of News.
@@ -39,7 +42,9 @@ def process(*args): #input filename
 #          #  pubdate.replace(tzinfo=None)
 #        except ValueError:
 #            pubdate = datetime.strptime(pubdate, "%a, %d %b %Y %H:%M:%S %z")
-    df = pd.read_csv('20131126.csv')
+
+#    df = pd.read_csv('20131126.csv')
+    
     ret = []
     for index,row in df.iterrows():
         if str(row['Actor1CountryCode']).upper() in args:
@@ -64,11 +69,14 @@ class News:
         self.url = url
         self.text = None
         self.publish_date = None
+        self.taxonomy = []
 
     def get_gevent_id(self):
         return self.gevent_id
     def get_countryCode(self):
         return self.countryCode
+    def get_tone(self):
+        return self.tone
     def get_dateAdded(self):
         return self.dateAdded
     def get_url(self):
@@ -77,6 +85,11 @@ class News:
         return self.text
     def get_publish_date(self):
         return self.publish_date
+    def get_taxonomy(self):
+        return self.taxonomy
+    
+    def set_taxonomy(self,taxonomy):
+        self.taxonomy.append(taxonomy)
     
     def clean_text(self):
         article = Article(self.url)
@@ -125,12 +138,18 @@ class PhraseTrigger(Trigger):
 class TextTrigger(PhraseTrigger):
     def __init__(self, phrase):
         PhraseTrigger.__init__(self, phrase)
+    def get_phrase(self):
+        return self.phrase
     def evaluate(self, story):
         return self.is_phrase_in(story.get_text())
 
 class AndTrigger(Trigger):
     def __init__(self, *args):
         self.args = args
+        
+    def get_args(self):
+        phrase_list = [arg.get_phrase() for arg in self.args]
+        return '+'.join(phrase_list)
     def evaluate(self, story):
         true_list = [T.evaluate(story) for T in self.args]
         result = (True, False)[False in true_list]
@@ -140,6 +159,9 @@ class AndTrigger(Trigger):
 class OrTrigger(Trigger):
     def __init__(self,*args):
         self.args = args
+    def get_args(self):
+        phrase_list = [arg.get_phrase() for arg in self.args]
+        return '+'.join(phrase_list)
     def evaluate(self, story):
         true_list = [T.evaluate(story) for T in self.args]
         result = (False,True)[True in true_list]
@@ -208,23 +230,27 @@ def read_trigger_config(filename):
     #print(lines) # for now, print it so you see what it contains!
     return trigger_dict    
     
-def filter_stories(stories, trigger_dict):
+def filter_stories(stories,trigger_dict,num_line):
     """
     Takes in a list of News instances.
 
     Returns: a list of only the stories for which a trigger in triggerlist fires.
     """
-    trig_story = []
-    temp_stories = stories[:30]
+#    trig_story = []
+    temp_stories = stories[:num_line]
     for index, story in enumerate(temp_stories):
-        print(index)
+        print('\n'+str(index))
         story.clean_text()
-#        for key,trig in trigger_dict.items():
-#            try:
-#                 print('append' if trig.evaluate(story) else 'false')
-##                trig_story.append(story)
-#            except AttributeError:
-#                print('error occured')
+        if story.get_text() == None:
+            pass
+        else:
+            for key,trig in trigger_dict.items():
+                try:
+                    story.set_taxonomy((key,trig.get_args())) if trig.evaluate(story) \
+                    else print('False',end=' ')
+                except AttributeError:
+                    pass
+#                print('Error occured',end=' ')
         #trig_story.append(story.get_text())
 #    return trig_story
 
