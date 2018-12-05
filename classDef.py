@@ -56,7 +56,7 @@ def process(df, *args): #input filename
     
             news = News(gevent_id,country_Code,tone,dateAdded,url)
             ret.append(news)
-    print('There are %d items in News.'% len(ret))
+    print('\nThere are %d items in News.'% len(ret))
     return ret
 
     
@@ -239,7 +239,8 @@ def filter_stories(stories,trigger_dict,num_line):
 #    trig_story = []
     temp_stories = stories[:num_line]
     for index, story in enumerate(temp_stories):
-        print('\n'+str(index))
+        print('\n'+str(index),end=' ')
+        print(story.get_gevent_id(),story.get_dateAdded())
         story.clean_text()
         if story.get_text() == None:
             pass
